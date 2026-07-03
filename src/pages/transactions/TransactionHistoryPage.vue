@@ -46,7 +46,7 @@
             <div class="col-6 col-sm-3">
               <q-select
                 v-model="statusFilter"
-                :options="['Semua Status', 'Open', 'Success', 'Pending', 'Failed']"
+                :options="['Semua Status', 'PENDING', 'OPEN', 'PAID', 'DITOLAK']"
                 dense
                 filled
                 borderless
@@ -327,9 +327,11 @@ const openImage = (url) => {
 
 const getStatusColor = (status) => {
   switch (status?.toLowerCase()) {
+    case 'paid':
     case 'success': return 'positive'
     case 'open': return 'warning'
     case 'pending': return 'info'
+    case 'ditolak':
     case 'failed': return 'negative'
     default: return 'grey'
   }

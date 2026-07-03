@@ -1394,9 +1394,9 @@ app.put('/api/transactions/:id', authenticateToken, async (req, res) => {
       if (!trx) throw new Error('Transaksi tidak ditemukan');
 
       // 2. Validate status
-      const validStatuses = ['open', 'pending'];
+      const validStatuses = ['pending'];
       if (!trx.status || !validStatuses.includes(trx.status.toLowerCase())) {
-        throw new Error(`Transaksi dengan status (${trx.status}) tidak dapat diubah.`);
+        throw new Error(`Transaksi dengan status (${trx.status}) sudah tidak dapat diubah.`);
       }
 
       const total_donasi = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty) || 0), 0);

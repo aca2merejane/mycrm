@@ -9,3 +9,4 @@ repair-*.js
 test-*.js
 query-*.js
 list-dbs.js
+*.sql

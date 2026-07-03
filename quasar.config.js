@@ -1,6 +1,6 @@
-const { configure } = require('quasar/wrappers');
+import { defineConfig } from '#q-app/wrappers';
 
-module.exports = configure(function (ctx) {
+export default defineConfig(function (ctx) {
   return {
     boot: [
       'axios',

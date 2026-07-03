@@ -10,6 +10,12 @@
 
         <q-space />
 
+        <!-- Toolbar Clock -->
+        <div v-if="!$q.screen.lt.sm" class="row items-center q-mr-md font-mono text-subtitle2 bg-teal-9 q-px-sm q-py-xs rounded-borders text-weight-bold shadow-1">
+          <q-icon name="schedule" size="xs" class="q-mr-xs text-teal-3" />
+          <span>{{ currentTime }}</span>
+        </div>
+
         <div class="row items-center no-wrap">
           <q-btn-dropdown flat no-caps stretch>
             <template v-slot:label>
@@ -42,6 +48,37 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-1">
+      <!-- User Profile Card -->
+      <div class="q-pa-md bg-bmh-tosca text-white profile-card-bg relative-position shadow-2">
+        <div class="row items-center no-wrap">
+          <q-avatar size="48px" class="q-mr-sm bg-white text-bmh-tosca shadow-1">
+            <q-icon name="person" size="32px" />
+          </q-avatar>
+          <div class="column justify-center overflow-hidden">
+            <div class="text-subtitle2 text-weight-bold leading-tight ellipsis" style="max-width: 180px;">{{ authStore.user?.name || 'User' }}</div>
+            <div class="text-caption text-teal-1 opacity-90 ellipsis" style="max-width: 180px;">{{ authStore.user?.email || '-' }}</div>
+            <div class="row items-center q-mt-xs q-gutter-xs">
+              <q-badge color="white" text-color="teal" class="text-weight-bold text-uppercase text-caption-extra">
+                {{ authStore.user?.priv_admin === 'Y' ? 'Admin' : 'Staff' }}
+              </q-badge>
+              <q-badge color="teal-9" class="text-weight-bold text-caption-extra">
+                Office: {{ authStore.user?.office || '-' }}
+              </q-badge>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Real-time Clock inside Profile Card -->
+        <div class="q-mt-md q-pt-sm border-top-light">
+          <div class="row items-center no-wrap text-white">
+            <q-icon name="schedule" size="xs" class="q-mr-xs opacity-80" />
+            <span class="text-subtitle2 font-mono text-weight-bold">{{ currentTime }}</span>
+            <q-space />
+            <span class="text-caption opacity-80 text-caption-extra">{{ currentDate }}</span>
+          </div>
+        </div>
+      </div>
+
       <q-list>
         <q-item-label header class="text-weight-bold text-uppercase text-grey-7"> 
           Main Navigation 
@@ -111,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, getCurrentInstance } from 'vue'
+import { ref, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'stores/auth'
 import { useQuasar } from 'quasar'
@@ -121,7 +158,22 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { proxy } = getCurrentInstance()
 
+// Realtime Clock State
+const currentTime = ref('')
+const currentDate = ref('')
+
+function updateTime() {
+  const now = new Date()
+  currentTime.value = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  currentDate.value = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+let timer = null
+
 onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+
   // Subscribe to push notifications if authenticated
   if (authStore.isAuthenticated && Notification.permission !== 'granted') {
     setTimeout(async () => {
@@ -135,6 +187,10 @@ onMounted(() => {
       }
     }, 2000);
   }
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
 })
 
 const menuList = [
@@ -332,5 +388,23 @@ body.q-body--dialog .mobile-nav-wrapper {
 .curved-top {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+}
+
+.profile-card-bg {
+  background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%) !important;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+}
+.border-top-light {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+.font-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+.leading-tight {
+  line-height: 1.25;
+}
+.text-caption-extra {
+  font-size: 10px !important;
+  padding: 2px 6px !important;
 }
 </style>

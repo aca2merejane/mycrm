@@ -23,7 +23,7 @@
               <q-select
                 v-model="filters.office"
                 :options="hierarchicalOffices"
-                option-label="kantor"
+                option-label="kantor_label"
                 option-value="officeid"
                 emit-value
                 map-options
@@ -36,7 +36,7 @@
                   <q-item v-bind="scope.itemProps">
                     <q-item-section>
                       <q-item-label :style="{ paddingLeft: (scope.opt.level * 16) + 'px' }" :class="{ 'text-weight-bold': scope.opt.level === 0 }">
-                        {{ scope.opt.kantor }}
+                        {{ scope.opt.kantor_label }}
                       </q-item-label>
                       <q-item-label caption :style="{ paddingLeft: (scope.opt.level * 16) + 'px' }">{{ scope.opt.officeid }}</q-item-label>
                     </q-item-section>
@@ -145,7 +145,7 @@ const hierarchicalOffices = computed(() => {
       office.officeid !== parent.officeid && 
       office.officeid.startsWith(parent.officeid)
     ).length
-    return { ...office, level }
+    return { ...office, level, kantor_label: `${office.officeid} - ${office.kantor}` }
   })
 })
 

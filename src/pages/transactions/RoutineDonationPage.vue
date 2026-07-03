@@ -29,11 +29,30 @@
       </div>
 
       <div class="col-12">
-        <q-tabs v-model="tab" dense class="text-primary" active-color="primary" indicator-color="primary" align="left" narrow-indicator>
-          <q-tab name="donors" icon="people" label="Daftar Donatur Rutin" />
-          <q-tab name="pending" icon="schedule" label="Tagihan Pending" />
-        </q-tabs>
-        <q-separator />
+        <div class="row items-center justify-between no-wrap q-mb-sm bg-white rounded-borders q-pa-sm shadow-1">
+          <q-tabs v-model="tab" dense class="text-primary" active-color="primary" indicator-color="primary" align="left" narrow-indicator>
+            <q-tab name="donors" icon="people" label="Daftar Donatur Rutin" />
+            <q-tab name="pending" icon="schedule" label="Tagihan Pending" />
+          </q-tabs>
+          
+          <q-space />
+          
+          <q-select
+            v-model="officeFilter"
+            :options="officeOptions"
+            option-value="officeid"
+            option-label="kantor_label"
+            emit-value
+            map-options
+            dense
+            filled
+            borderless
+            label="Filter Kantor"
+            clearable
+            style="width: 240px"
+            class="q-mr-sm"
+          />
+        </div>
 
         <q-tab-panels v-model="tab" animated class="bg-transparent">
           <!-- Tab: Routine Donors -->
@@ -404,7 +423,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue'
+import { ref, onMounted, watch, computed, reactive } from 'vue'
 import { api } from 'src/api'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'stores/auth'
@@ -512,6 +531,26 @@ const saveTransactionEdit = async () => {
   }
 }
 
+const officeFilter = ref('')
+const officeOptions = ref([])
+
+const fetchOffices = async () => {
+  try {
+    const res = await api.get('/master/office')
+    const sorted = [...res.data].sort((a, b) => a.officeid.localeCompare(b.officeid))
+    officeOptions.value = sorted.map(o => ({
+      ...o,
+      kantor_label: `${o.officeid} - ${o.kantor}`
+    }))
+  } catch (error) {
+    console.error('Failed to fetch offices:', error)
+  }
+}
+
+watch(officeFilter, () => {
+  fetchData()
+})
+
 const routineDonors = ref([])
 const pendingTx = ref([])
 const allProducts = ref([])
@@ -577,8 +616,8 @@ const fetchData = async () => {
   loadingPending.value = true
   try {
     const [resDon, resPend, resProd, resPay] = await Promise.all([
-      api.get('/routine/donors'),
-      api.get('/transactions', { params: { status: 'PENDING', limit: 100 } }),
+      api.get('/routine/donors', { params: { office: officeFilter.value || '' } }),
+      api.get('/transactions', { params: { status: 'PENDING', limit: 100, office: officeFilter.value || '' } }),
       api.get('/master/product'),
       api.get('/master/payment-method')
     ])
@@ -772,7 +811,10 @@ const formatCurrency = (val) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val)
 }
 
-onMounted(fetchData)
+onMounted(async () => {
+  await fetchOffices()
+  await fetchData()
+})
 </script>
 
 <style scoped>

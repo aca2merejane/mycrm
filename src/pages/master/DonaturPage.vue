@@ -34,11 +34,31 @@
         >
           <!-- Search Header -->
           <template v-slot:top-right>
-            <q-input v-model="filter" dense filled borderless placeholder="Cari Nama, Alamat, HP..." class="q-ml-md" style="min-width: 320px" debounce="500">
-              <template v-slot:prepend>
-                <q-icon name="search" color="primary" />
-              </template>
-            </q-input>
+            <div class="row q-col-gutter-sm items-center">
+              <div class="col-auto">
+                <q-select
+                  v-model="officeFilter"
+                  :options="offices"
+                  option-value="officeid"
+                  option-label="kantor_label"
+                  emit-value
+                  map-options
+                  dense
+                  filled
+                  borderless
+                  label="Filter Kantor"
+                  clearable
+                  style="min-width: 200px"
+                />
+              </div>
+              <div class="col-auto">
+                <q-input v-model="filter" dense filled borderless placeholder="Cari Nama, Alamat, HP..." style="min-width: 250px" debounce="500">
+                  <template v-slot:prepend>
+                    <q-icon name="search" color="primary" />
+                  </template>
+                </q-input>
+              </div>
+            </div>
           </template>
 
           <!-- MOBILE VIEW (Grid Slot) -->
@@ -143,7 +163,7 @@
               <q-select 
                 v-model="form.office" 
                 :options="offices" 
-                option-label="kantor" 
+                option-label="kantor_label" 
                 option-value="officeid" 
                 emit-value 
                 map-options 
@@ -187,7 +207,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, watch } from 'vue'
 import { api } from 'src/api'
 import { useQuasar, date } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
@@ -201,6 +221,12 @@ const deleting = ref(false)
 const filter = ref('')
 const rows = ref([])
 const offices = ref([])
+const officeFilter = ref('')
+watch(officeFilter, () => {
+  pagination.value.page = 1
+  fetchData()
+})
+
 const pagination = ref({
   sortBy: 'donatur_id',
   descending: true,
@@ -257,7 +283,8 @@ const fetchData = async (props) => {
     const params = {
       page,
       limit: rowsPerPage,
-      search: filter.value
+      search: filter.value,
+      office: officeFilter.value || ''
     }
     
     const [resDon, resOff] = await Promise.all([
@@ -266,7 +293,11 @@ const fetchData = async (props) => {
     ])
     
     rows.value = resDon.data.data
-    offices.value = resOff.data
+    const sorted = [...resOff.data].sort((a, b) => a.officeid.localeCompare(b.officeid))
+    offices.value = sorted.map(o => ({
+      ...o,
+      kantor_label: `${o.officeid} - ${o.kantor}`
+    }))
     
     // Update local pagination state
     pagination.value.page = resDon.data.pagination.page

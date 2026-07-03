@@ -536,7 +536,10 @@ app.get('/api/master/office', authenticateToken, async (req, res) => {
     const userOffice = req.user.office || '0';
     const officePrefix = userOffice.startsWith('0') && userOffice.length === 1 ? '0%' : `${userOffice}%`;
     
-    const data = await db.select().from(tbl_office).where(like(tbl_office.officeid, officePrefix));
+    const data = await db.select()
+      .from(tbl_office)
+      .where(like(tbl_office.officeid, officePrefix))
+      .orderBy(asc(tbl_office.officeid));
     res.json(data);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching offices' });
@@ -732,6 +735,18 @@ app.get('/api/routine/donors', authenticateToken, async (req, res) => {
   try {
     const userOffice = req.user.office || '0';
     const officePrefix = userOffice.startsWith('0') && userOffice.length === 1 ? '0%' : `${userOffice}%`;
+    const selectedOffice = req.query.office || '';
+
+    let officeCondition;
+    if (selectedOffice) {
+      if (selectedOffice.startsWith(userOffice.startsWith('0') && userOffice.length === 1 ? '0' : userOffice)) {
+        officeCondition = like(donatur.office, `${selectedOffice}%`);
+      } else {
+        officeCondition = like(donatur.office, officePrefix);
+      }
+    } else {
+      officeCondition = like(donatur.office, officePrefix);
+    }
     
     const data = await db.select({
       donatur_id: donatur.donatur_id,
@@ -746,7 +761,7 @@ app.get('/api/routine/donors', authenticateToken, async (req, res) => {
     })
     .from(donatur)
     .where(and(
-      like(donatur.office, officePrefix),
+      officeCondition,
       eq(donatur.d_tipe, 'RUTIN')
     ));
     
@@ -878,8 +893,20 @@ app.get('/api/master/donatur', authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const page = parseInt(req.query.page) || 1;
     const offset = (page - 1) * limit;
+    const selectedOffice = req.query.office || '';
 
-    let conditions = [like(donatur.office, officePrefix)];
+    let officeCondition;
+    if (selectedOffice) {
+      if (selectedOffice.startsWith(userOffice.startsWith('0') && userOffice.length === 1 ? '0' : userOffice)) {
+        officeCondition = like(donatur.office, `${selectedOffice}%`);
+      } else {
+        officeCondition = like(donatur.office, officePrefix);
+      }
+    } else {
+      officeCondition = like(donatur.office, officePrefix);
+    }
+
+    let conditions = [officeCondition];
 
     if (searchTerm) {
       conditions.push(sql`(
@@ -1021,9 +1048,21 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
     // Filter params
     const searchTerm = req.query.search || '';
     const statusFilter = req.query.status && req.query.status !== 'Semua Status' ? req.query.status : null;
+    const selectedOffice = req.query.office || '';
 
     // Base conditions
-    const conditions = [like(transaksi.office, officePrefix)];
+    let officeCondition;
+    if (selectedOffice) {
+      if (selectedOffice.startsWith(userOffice.startsWith('0') && userOffice.length === 1 ? '0' : userOffice)) {
+        officeCondition = like(transaksi.office, `${selectedOffice}%`);
+      } else {
+        officeCondition = like(transaksi.office, officePrefix);
+      }
+    } else {
+      officeCondition = like(transaksi.office, officePrefix);
+    }
+
+    const conditions = [officeCondition];
     
     if (searchTerm) {
       conditions.push(sql`(

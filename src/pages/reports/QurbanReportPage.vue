@@ -43,7 +43,7 @@
               <q-select
                 v-model="filters.office"
                 :options="officeOptions"
-                option-label="kantor"
+                option-label="kantor_label"
                 option-value="officeid"
                 emit-value
                 map-options
@@ -688,7 +688,11 @@ const fetchOffices = async () => {
   if (!isCentralAdmin.value) return
   try {
     const res = await api.get('/master/office')
-    officeOptions.value = Array.isArray(res.data) ? res.data : []
+    const sorted = [...res.data].sort((a, b) => a.officeid.localeCompare(b.officeid))
+    officeOptions.value = sorted.map(o => ({
+      ...o,
+      kantor_label: `${o.officeid} - ${o.kantor}`
+    }))
   } catch (err) {
     console.error('Failed to load offices:', err)
   }

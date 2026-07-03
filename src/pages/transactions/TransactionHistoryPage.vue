@@ -21,12 +21,27 @@
       <div class="col-12 col-md-10">
         <q-card flat bordered class="bg-white q-pa-sm rounded-lg">
           <div class="row q-col-gutter-sm items-center">
-            <div class="col-12 col-sm-6">
+            <div class="col-12 col-sm-4">
               <q-input v-model="filter" dense filled borderless placeholder="Cari donatur atau ID..." clearable>
                 <template v-slot:prepend>
                   <q-icon name="search" color="primary" />
                 </template>
               </q-input>
+            </div>
+            <div class="col-6 col-sm-3">
+              <q-select
+                v-model="officeFilter"
+                :options="officeOptions"
+                option-value="officeid"
+                option-label="kantor_label"
+                emit-value
+                map-options
+                dense
+                filled
+                borderless
+                label="Kantor"
+                clearable
+              />
             </div>
             <div class="col-6 col-sm-3">
               <q-select
@@ -38,8 +53,8 @@
                 label="Status"
               />
             </div>
-            <div class="col-6 col-sm-3 text-right">
-              <q-btn flat color="grey-7" icon="refresh" label="Muat Ulang" @click="fetchData" :loading="loading" />
+            <div class="col-12 col-sm-2 text-right">
+              <q-btn flat color="grey-7" icon="refresh" label="Refresh" @click="fetchData" :loading="loading" class="full-width" />
             </div>
           </div>
         </q-card>
@@ -227,6 +242,8 @@ const loading = ref(false)
 const approving = ref(false)
 const filter = ref('')
 const statusFilter = ref('Semua Status')
+const officeFilter = ref('')
+const officeOptions = ref([])
 const rows = ref([])
 
 // Pagination State
@@ -239,6 +256,19 @@ const totalCount = ref(0)
 const detailDialog = ref(false)
 const selectedTransaction = ref(null)
 
+const fetchOffices = async () => {
+  try {
+    const res = await api.get('/master/office')
+    const sorted = [...res.data].sort((a, b) => a.officeid.localeCompare(b.officeid))
+    officeOptions.value = sorted.map(o => ({
+      ...o,
+      kantor_label: `${o.officeid} - ${o.kantor}`
+    }))
+  } catch (error) {
+    console.error('Failed to fetch offices:', error)
+  }
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -246,7 +276,8 @@ const fetchData = async () => {
       page: currentPage.value,
       limit: pageSize.value,
       search: filter.value,
-      status: statusFilter.value
+      status: statusFilter.value,
+      office: officeFilter.value || ''
     }
     const response = await api.get('/transactions', { params })
     rows.value = response.data.data
@@ -260,8 +291,13 @@ const fetchData = async () => {
   }
 }
 
+onMounted(async () => {
+  await fetchOffices()
+  await fetchData()
+})
+
 // Reset page when filter changes
-watch([filter, statusFilter], () => {
+watch([filter, statusFilter, officeFilter], () => {
   currentPage.value = 1
   fetchData()
 })
@@ -269,6 +305,7 @@ watch([filter, statusFilter], () => {
 const clearFilters = () => {
   filter.value = ''
   statusFilter.value = 'Semua Status'
+  officeFilter.value = ''
 }
 
 const viewDetail = async (id) => {

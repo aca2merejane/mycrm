@@ -224,6 +224,28 @@
             @click="approveTransaction(selectedTransaction.id)"
             :loading="approving"
           />
+          <q-btn 
+            v-if="isFinance && selectedTransaction.status?.toLowerCase() === 'pending'"
+            color="info" 
+            label="Proses ke Open" 
+            icon="forward" 
+            unelevated 
+            size="lg" 
+            class="rounded-borders q-ml-sm"
+            @click="processOpenTransaction(selectedTransaction.id)"
+            :loading="processingOpen"
+          />
+          <q-btn 
+            v-if="isFinance && (selectedTransaction.status?.toLowerCase() === 'open' || selectedTransaction.status?.toLowerCase() === 'pending')"
+            color="negative" 
+            label="Tolak" 
+            icon="cancel" 
+            unelevated 
+            size="lg" 
+            class="rounded-borders q-ml-sm"
+            @click="rejectTransaction(selectedTransaction.id)"
+            :loading="rejecting"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -350,6 +372,51 @@ const isFinance = computed(() => {
   const roleId = Number(auth.user?.role)
   return auth.isAdmin || roleId === 2
 })
+
+const processingOpen = ref(false)
+const rejecting = ref(false)
+
+const processOpenTransaction = async (id) => {
+  $q.dialog({
+    title: 'Konfirmasi Proses ke Open',
+    message: 'Apakah Anda yakin ingin memproses transaksi PENDING ini ke status OPEN?',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    processingOpen.value = true
+    try {
+      await api.post(`/transactions/${id}/process-open`)
+      $q.notify({ color: 'positive', message: 'Transaksi berhasil diubah ke status OPEN' })
+      detailDialog.value = false
+      fetchData()
+    } catch (error) {
+      $q.notify({ color: 'negative', message: error.response?.data?.message || 'Gagal memproses transaksi' })
+    } finally {
+      processingOpen.value = false
+    }
+  })
+}
+
+const rejectTransaction = async (id) => {
+  $q.dialog({
+    title: 'Konfirmasi Tolak Transaksi',
+    message: 'Apakah Anda yakin ingin menolak transaksi ini? Status transaksi akan diubah menjadi DITOLAK.',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    rejecting.value = true
+    try {
+      await api.post(`/transactions/${id}/reject`)
+      $q.notify({ color: 'positive', message: 'Transaksi berhasil ditolak' })
+      detailDialog.value = false
+      fetchData()
+    } catch (error) {
+      $q.notify({ color: 'negative', message: error.response?.data?.message || 'Gagal menolak transaksi' })
+    } finally {
+      rejecting.value = false
+    }
+  })
+}
 
 const approveTransaction = async (id) => {
   $q.dialog({

@@ -1288,6 +1288,45 @@ app.post('/api/transactions/:id/approve', authenticateToken, async (req, res) =>
   }
 });
 
+// 3. Process Transaction Pending to Open
+app.post('/api/transactions/:id/process-open', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [trx] = await db.select().from(transaksi).where(eq(transaksi.trans_id, id)).limit(1);
+    if (!trx) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+    if (trx.status?.toUpperCase() !== 'PENDING') {
+      return res.status(400).json({ message: `Transaction status is currently ${trx.status}, cannot change to Open` });
+    }
+    await db.update(transaksi).set({ status: 'Open' }).where(eq(transaksi.trans_id, id));
+    res.json({ message: 'Transaction status moved from PENDING to OPEN successfully' });
+  } catch (error) {
+    console.error('Process Open error:', error);
+    res.status(500).json({ message: error.message || 'Error processing transaction to Open' });
+  }
+});
+
+// 4. Reject Transaction (Open -> DITOLAK)
+app.post('/api/transactions/:id/reject', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [trx] = await db.select().from(transaksi).where(eq(transaksi.trans_id, id)).limit(1);
+    if (!trx) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+    const currentStatus = trx.status?.toUpperCase();
+    if (currentStatus !== 'OPEN' && currentStatus !== 'PENDING') {
+      return res.status(400).json({ message: `Transaction status is currently ${trx.status}, cannot be rejected` });
+    }
+    await db.update(transaksi).set({ status: 'DITOLAK' }).where(eq(transaksi.trans_id, id));
+    res.json({ message: 'Transaction rejected successfully' });
+  } catch (error) {
+    console.error('Reject transaction error:', error);
+    res.status(500).json({ message: error.message || 'Error rejecting transaction' });
+  }
+});
+
 app.post('/api/transactions', authenticateToken, async (req, res) => {
   const { donor_id, payment_id, tgl, items, keterangan, bukti } = req.body;
   const userOffice = req.user.office || '0';

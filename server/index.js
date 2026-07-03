@@ -27,7 +27,30 @@ const JWT_SECRET = process.env.JWT_SECRET || 'bmh-secret-key-2024';
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+// CORS Configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:9000', // Quasar SPA default port
+  'http://localhost:9001', // Quasar SPA alternate port
+  'http://localhost:8080'
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => allowed === '*' || allowed === origin);
+
+    if (isAllowed || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 

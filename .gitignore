@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.quasar/
+.env
+.vscode/
+.idea/
+check-*.js
+repair-*.js
+test-*.js
+query-*.js
+list-dbs.js

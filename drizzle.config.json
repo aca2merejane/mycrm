@@ -1,0 +1,12 @@
+{
+  "out": "./drizzle",
+  "schema": "./server/db/schema.ts",
+  "dialect": "mysql",
+  "dbCredentials": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "root",
+    "database": "mycrm_dev"
+  }
+}
